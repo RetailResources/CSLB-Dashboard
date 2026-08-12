@@ -29,6 +29,7 @@ body {
   padding: 24px;
 }
 
+/* ---- Topbar ---- */
 .topbar {
   display: flex;
   align-items: flex-start;
@@ -42,6 +43,8 @@ body {
   backdrop-filter: blur(8px);
   margin-bottom: 18px;
 }
+
+.topbar-brand { flex: 1; min-width: 0; }
 
 .eyebrow {
   margin: 0 0 8px;
@@ -73,8 +76,10 @@ h2 {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
+/* ---- Buttons ---- */
 .btn {
   border: 0;
   border-radius: 999px;
@@ -82,11 +87,10 @@ h2 {
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
 }
 
-.btn:hover {
-  transform: translateY(-1px);
-}
+.btn:hover { transform: translateY(-1px); }
 
 .btn-primary {
   background: var(--primary);
@@ -94,15 +98,14 @@ h2 {
   box-shadow: 0 8px 18px rgba(15, 98, 254, 0.24);
 }
 
-.btn-primary:hover {
-  background: var(--primary-dark);
-}
+.btn-primary:hover { background: var(--primary-dark); }
 
 .btn-secondary {
   background: var(--secondary);
   color: var(--secondary-text);
 }
 
+/* ---- Status bar ---- */
 .status-bar {
   margin-bottom: 18px;
   padding: 14px 16px;
@@ -111,16 +114,16 @@ h2 {
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
   color: var(--muted);
+  font-size: 13px;
 }
 
-.view.hidden {
-  display: none;
-}
+/* ---- View toggle ---- */
+.view.hidden { display: none; }
 
+/* ---- Card ---- */
 .card {
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid var(--border);
-  border-radius: 0;
   box-shadow: var(--shadow);
   padding: 10px;
   margin-bottom: 14px;
@@ -128,7 +131,7 @@ h2 {
 
 .card-header {
   display: flex;
-  align-items: end;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 8px;
@@ -145,6 +148,7 @@ h2 {
   white-space: nowrap;
 }
 
+/* ---- Selects ---- */
 .selector-group,
 .toggle-group {
   display: flex;
@@ -153,9 +157,7 @@ h2 {
   min-width: 240px;
 }
 
-.toggle-group {
-  min-width: 180px;
-}
+.toggle-group { min-width: 180px; }
 
 .selector-group label,
 .toggle-group label {
@@ -176,20 +178,22 @@ select {
   font-size: 14px;
 }
 
+/* ---- Summary panel ---- */
 .summary-panel {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   padding: 14px 16px;
   border-radius: 14px;
   border: 1px solid var(--border);
   background: linear-gradient(180deg, #fbfcff 0%, #f8fbff 100%);
-  color: var(--text);
   overflow-x: auto;
+  font-size: 13px;
+  color: var(--muted);
 }
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
 }
 
 .summary-item {
@@ -201,7 +205,7 @@ select {
 
 .summary-label {
   display: block;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
   margin-bottom: 4px;
   text-transform: uppercase;
@@ -211,78 +215,15 @@ select {
 .summary-value {
   font-size: 15px;
   font-weight: 700;
+  color: var(--text);
 }
 
-.table-wrap {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  border-radius: 0;
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  border-spacing: 0;
-  min-width: 1200px;
-}
-
-.data-table thead th {
-  background: #1f6b88;
-  color: #fff;
-  font-size: 12px;
-  text-align: center;
-  padding: 4px 6px;
-  border: 1px solid #000;
-  white-space: nowrap;
-  line-height: 1.1;
-}
-
-.data-table tbody td {
-  padding: 3px 6px;
-  border: 1px solid #000;
-  font-size: 12px;
-  text-align: center;
-  vertical-align: middle;
-  line-height: 1.1;
-}
-
-.data-table tbody tr:hover td {
-  background: inherit;
-}
-
-.metric-cell {
-  font-weight: 700;
-}
-
-.q1 {
-  background: #00b050;
-  color: #000;
-}
-
-.q2 {
-  background: #92d050;
-  color: #000;
-}
-
-.q3 {
-  background: #ffff00;
-  color: #000;
-}
-
-.q4 {
-  background: #ffc000;
-  color: #000;
-}
-
-.q5 {
-  background: #ff0000;
-  color: #000;
-}
-
+/* ---- Rank table ---- */
 .rank-table {
   width: auto;
-  min-width: 320px;
+  min-width: 260px;
   margin: 0 0 4px 0;
+  border-collapse: collapse;
 }
 
 .rank-table th,
@@ -299,10 +240,14 @@ select {
   color: #fff;
 }
 
+/* ---- Weight band ---- */
 .weight-band {
   display: grid;
+  /* spacer covers: Month + Name + Quintile Position + Overall Rank + * = 5 base cols */
+  /* approximate pixel widths to roughly match table */
   grid-template-columns: 320px 1fr;
   margin-bottom: 4px;
+  overflow-x: auto;
 }
 
 .weight-spacer {
@@ -323,21 +268,54 @@ select {
   font-size: 12px;
   font-weight: 700;
   padding: 2px 0;
+  white-space: nowrap;
 }
 
-#outliersView .card {
-  border-radius: 0;
-  padding: 10px;
+/* ---- Data table ---- */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-#outliersView .data-table {
-  min-width: 900px;
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  min-width: 1300px;
 }
 
-#outliersRankHost {
-  margin-bottom: 4px;
+.data-table thead th {
+  background: #1f6b88;
+  color: #fff;
+  font-size: 11px;
+  text-align: center;
+  padding: 4px 4px;
+  border: 1px solid #000;
+  white-space: nowrap;
+  line-height: 1.2;
 }
 
+.data-table tbody td {
+  padding: 3px 5px;
+  border: 1px solid #000;
+  font-size: 11px;
+  text-align: center;
+  vertical-align: middle;
+  line-height: 1.1;
+}
+
+/* ---- Quintile colors ---- */
+.q1 { background: #00b050; color: #000; }
+.q2 { background: #92d050; color: #000; }
+.q3 { background: #ffff00; color: #000; }
+.q4 { background: #ffc000; color: #000; }
+.q5 { background: #ff0000; color: #000; }
+
+/* ---- Outliers view ---- */
+#outliersView .data-table { min-width: 500px; }
+#outliersRankHost { margin-bottom: 4px; }
+
+/* ---- Mobile ---- */
 @media (max-width: 960px) {
   .topbar,
   .card-header {
@@ -345,38 +323,36 @@ select {
     align-items: stretch;
   }
 
+  .topbar-actions {
+    flex-direction: row;
+  }
+
   .selector-group,
   .toggle-group {
     min-width: 0;
   }
 
-  h1 {
-    font-size: 28px;
-  }
+  h1 { font-size: 26px; }
 
-  .app-shell {
-    padding: 16px;
-  }
+  .app-shell { padding: 12px; }
 
-  .summary-grid {
-    grid-template-columns: 1fr;
-  }
+  .summary-grid { grid-template-columns: 1fr 1fr; }
 
-  .data-table {
-    min-width: 980px;
-  }
+  .data-table { min-width: 1100px; }
 
   .data-table thead th,
   .data-table tbody td {
-    font-size: 11px;
-    padding: 3px 4px;
+    font-size: 10px;
+    padding: 2px 3px;
   }
 
-  .rank-table {
-    min-width: 280px;
-  }
+  .rank-table { min-width: 220px; }
 
-  .weight-band {
-    grid-template-columns: 180px 1fr;
-  }
+  .weight-band { grid-template-columns: 200px 1fr; }
+}
+
+@media (max-width: 480px) {
+  h1 { font-size: 22px; }
+  .summary-grid { grid-template-columns: 1fr; }
+  .topbar-actions { flex-direction: column; }
 }
