@@ -9,11 +9,6 @@
   --primary-dark: #0b4fc2;
   --secondary: #e8eef8;
   --secondary-text: #16325c;
-  --green-dark: #0b7a3b;
-  --green-light: #7fc97f;
-  --yellow: #f4d35e;
-  --orange: #f4a261;
-  --red: #d1495b;
   --white: #ffffff;
 }
 
@@ -125,10 +120,10 @@ h2 {
 .card {
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: 0;
   box-shadow: var(--shadow);
-  padding: 20px;
-  margin-bottom: 18px;
+  padding: 10px;
+  margin-bottom: 14px;
 }
 
 .card-header {
@@ -136,7 +131,7 @@ h2 {
   align-items: end;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   flex-wrap: wrap;
 }
 
@@ -220,40 +215,38 @@ select {
 
 .table-wrap {
   overflow-x: auto;
-  border-radius: 16px;
+  border-radius: 0;
 }
 
 .data-table {
   width: 100%;
-  border-collapse: separate;
+  border-collapse: collapse;
   border-spacing: 0;
-  min-width: 980px;
+  min-width: 1200px;
 }
 
 .data-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: #f8fbff;
-  color: #31445f;
+  background: #1f6b88;
+  color: #fff;
   font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  text-align: left;
-  padding: 12px 10px;
-  border-bottom: 1px solid var(--border);
+  text-align: center;
+  padding: 4px 6px;
+  border: 1px solid #000;
   white-space: nowrap;
+  line-height: 1.1;
 }
 
 .data-table tbody td {
-  padding: 11px 10px;
-  border-bottom: 1px solid #edf1f7;
-  font-size: 14px;
+  padding: 3px 6px;
+  border: 1px solid #000;
+  font-size: 12px;
+  text-align: center;
   vertical-align: middle;
+  line-height: 1.1;
 }
 
 .data-table tbody tr:hover td {
-  background: #f9fbff;
+  background: inherit;
 }
 
 .metric-cell {
@@ -261,40 +254,87 @@ select {
 }
 
 .q1 {
-  background: rgba(11, 122, 59, 0.16);
-  color: #0b5e2b;
+  background: #00b050;
+  color: #000;
 }
 
 .q2 {
-  background: rgba(127, 201, 127, 0.18);
-  color: #1f6b33;
+  background: #92d050;
+  color: #000;
 }
 
 .q3 {
-  background: rgba(244, 211, 94, 0.22);
-  color: #735c00;
+  background: #ffff00;
+  color: #000;
 }
 
 .q4 {
-  background: rgba(244, 162, 97, 0.20);
-  color: #8a4f12;
+  background: #ffc000;
+  color: #000;
 }
 
 .q5 {
-  background: rgba(209, 73, 91, 0.16);
-  color: #8b1f31;
+  background: #ff0000;
+  color: #000;
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: #edf3ff;
-  color: #24467c;
+.rank-table {
+  width: auto;
+  min-width: 320px;
+  margin: 0 0 4px 0;
+}
+
+.rank-table th,
+.rank-table td {
+  border: 1px solid #000;
+  padding: 3px 8px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.1;
+}
+
+.rank-table th {
+  background: #1f6b88;
+  color: #fff;
+}
+
+.weight-band {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  margin-bottom: 4px;
+}
+
+.weight-spacer {
+  min-height: 22px;
+}
+
+.weight-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 0;
+}
+
+.weight-cell {
+  background: #92d050;
+  color: #000;
+  border: 1px solid #000;
+  text-align: center;
   font-size: 12px;
   font-weight: 700;
+  padding: 2px 0;
+}
+
+#outliersView .card {
+  border-radius: 0;
+  padding: 10px;
+}
+
+#outliersView .data-table {
+  min-width: 900px;
+}
+
+#outliersRankHost {
+  margin-bottom: 4px;
 }
 
 @media (max-width: 960px) {
