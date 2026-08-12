@@ -99,10 +99,17 @@ const el = {
   districtSelect: document.getElementById("districtSelect"),
   outlierMetricSelect: document.getElementById("outlierMetricSelect"),
   outlierModeSelect: document.getElementById("outlierModeSelect"),
+  outliersRankHost: document.getElementById("outliersRankHost"),
   regionMeta: document.getElementById("regionMeta"),
   districtMeta: document.getElementById("districtMeta"),
   selectedDistrictSummary: document.getElementById("selectedDistrictSummary"),
   outliersMeta: document.getElementById("outliersMeta"),
+  regionRankHost: document.getElementById("regionRankHost"),
+  regionWeightHost: document.getElementById("regionWeightHost"),
+  districtRankHost: document.getElementById("districtRankHost"),
+  districtWeightHost: document.getElementById("districtWeightHost"),
+  storeRankHost: document.getElementById("storeRankHost"),
+  storeWeightHost: document.getElementById("storeWeightHost"),
 };
 
 function escapeHtml(value) {
@@ -343,7 +350,7 @@ function formatCellValue(value) {
   return String(value);
 }
 
-function buildTable(tableEl, rows, type, rankRules = []) {
+function buildTable(tableEl, rows, type, rankRules = [], visibleColumns = null) {
   tableEl.innerHTML = "";
 
   if (!rows || !rows.length) {
@@ -351,7 +358,9 @@ function buildTable(tableEl, rows, type, rankRules = []) {
     return;
   }
 
-  const headers = Object.keys(rows[0]).filter((h) => !isSeparatorColumn(h) && !String(h).startsWith("__"));
+  const headers = (visibleColumns && visibleColumns.length)
+    ? visibleColumns.filter((h) => Object.prototype.hasOwnProperty.call(rows[0], h))
+    : Object.keys(rows[0]).filter((h) => !isSeparatorColumn(h) && !String(h).startsWith("__"));
   const thead = document.createElement("thead");
   const headerRow = document.createElement("tr");
 
@@ -388,6 +397,138 @@ function buildTable(tableEl, rows, type, rankRules = []) {
   tableEl.appendChild(tbody);
 }
 
+const REGION_VISIBLE_COLUMNS = [
+  "Month",
+  "Region",
+  "Quintile Position",
+  "Overall Rank",
+  "*",
+  "GP Per Labor Hour %Tgt",
+  "GP Per Labor Hour Rank",
+  "PP Act %Tgt",
+  "PP Act Attain Rank",
+  "ReBiz Conv %Tgt",
+  "ReBiz Conv Rank",
+  "Acc GP Pct Actual",
+  "Acc GP Pct Rank",
+  "CSAT Actual",
+  "CSAT Rank",
+  "Visa Priority Rate %Tg",
+  "Visa Priority Rate Rank",
+  "P360 Attach Rate %Tgt",
+  "P360 Attach Rate Rank",
+  "Premium Mix Rate %Tgt",
+  "Premium Rate Plan Rank",
+];
+
+const DISTRICT_VISIBLE_COLUMNS = [
+  "Month",
+  "District",
+  "Quintile Position",
+  "Overall Rank",
+  "*",
+  "GP Per Labor Hour %Tgt",
+  "GP Per Labor Hour Rank",
+  "PP Act %Tgt",
+  "PP Act Attain Rank",
+  "ReBiz Conv %Tgt",
+  "ReBiz Conv Rank",
+  "Acc GP Pct Actual",
+  "Acc GP Pct Rank",
+  "CSAT Actual",
+  "CSAT Rank",
+  "Visa Priority Rate %Tg",
+  "Visa Priority Rate Rank",
+  "P360 Attach Rate %Tgt",
+  "P360 Attach Rate Rank",
+  "Premium Mix Rate %Tgt",
+  "Premium Rate Plan Rank",
+];
+
+const STORE_VISIBLE_COLUMNS = [
+  "Month",
+  "SAP",
+  "Sap: Loaction",
+  "Quintile Position",
+  "Overall Rank",
+  "*",
+  "GP Per Labor Hour %Tgt",
+  "GP Per Labor Hour Rank",
+  "PP Act %Tgt",
+  "PP Act Attain Rank",
+  "ReBiz Conv %Tgt",
+  "ReBiz Conv Rank",
+  "Acc GP Pct Actual",
+  "Acc GP Pct Rank",
+  "CSAT Actual",
+  "CSAT Rank",
+  "Visa Priority Rate %Tg",
+  "Visa Priority Rate Rank",
+  "P360 Attach Rate %Tgt",
+  "P360 Attach Rate Rank",
+  "Premium Mix Rate %Tgt",
+  "Premium Rate Plan Rank",
+];
+
+function renderRankTable(container, rows) {
+  container.innerHTML = `
+    <table class="data-table rank-table">
+      <thead>
+        <tr>
+          <th>Quintile Position</th>
+          <th>Min Rank</th>
+          <th>Max Rank</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows
+          .map(
+            (r) => `
+            <tr>
+              <td class="${quintileClass(r[0])}">${r[0]}</td>
+              <td class="${quintileClass(r[0])}">${r[1]}</td>
+              <td class="${quintileClass(r[0])}">${r[2]}</td>
+            </tr>`
+          )
+          .join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function renderWeightBand(container) {
+  const weights = ["15%", "15%", "15%", "10%", "10%", "15%", "10%", "10%"];
+  container.innerHTML = `
+    <div class="weight-band">
+      <div class="weight-spacer"></div>
+      <div class="weight-grid">
+        ${weights.map((w) => `<div class="weight-cell">${w}</div>`).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderOutlierRankTable(container) {
+  container.innerHTML = `
+    <table class="data-table rank-table">
+      <thead>
+        <tr>
+          <th>Quintile Position</th>
+          <th>Min Rank</th>
+          <th>Max Rank</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="q1">1</td><td class="q1">1</td><td class="q1">1</td></tr>
+        <tr><td class="q2">2</td><td class="q2">2</td><td class="q2">3</td></tr>
+        <tr><td class="q3">3</td><td class="q3">3</td><td class="q3">3</td></tr>
+        <tr><td class="q4">4</td><td class="q4">4</td><td class="q4">4</td></tr>
+        <tr><td class="q5">5</td><td class="q5">5</td><td class="q5">5</td></tr>
+      </tbody>
+    </table>
+  `;
+}
+
 function renderSummaryGrid(container, row) {
   if (!row) {
     container.innerHTML = `<div class="summary-grid"><div class="summary-item"><span class="summary-label">No selection</span><span class="summary-value">No data available</span></div></div>`;
@@ -421,8 +562,26 @@ function renderDashboard() {
   el.regionMeta.textContent = `${state.regions.length} rows`;
   el.districtMeta.textContent = `${state.districts.length} rows`;
 
-  buildTable(el.regionTable, state.regions, "region", state.metricRules.region);
-  buildTable(el.districtTable, state.districts, "district", state.metricRules.district);
+  renderRankTable(el.regionRankHost, [
+    [1, 1, 1],
+    [2, 2, 3],
+    [3, 3, 3],
+    [4, 4, 4],
+  ]);
+
+  renderRankTable(el.districtRankHost, [
+    [1, 1, 7],
+    [2, 8, 14],
+    [3, 15, 22],
+    [4, 23, 29],
+    [5, 30, 37],
+  ]);
+
+  renderWeightBand(el.regionWeightHost);
+  renderWeightBand(el.districtWeightHost);
+
+  buildTable(el.regionTable, state.regions, "region", state.metricRules.region, REGION_VISIBLE_COLUMNS);
+  buildTable(el.districtTable, state.districts, "district", state.metricRules.district, DISTRICT_VISIBLE_COLUMNS);
   renderDistrictView();
 }
 
@@ -432,14 +591,36 @@ function renderDistrictView() {
   const storeRows = getDistrictStores(districtName);
 
   renderSummaryGrid(el.selectedDistrictSummary, districtRow);
-  buildTable(el.storeTable, storeRows, "store", state.metricRules.store);
+
+  renderRankTable(el.storeRankHost, [
+    [1, 1, 72],
+    [2, 73, 144],
+    [3, 145, 216],
+    [4, 217, 288],
+    [5, 289, 360],
+  ]);
+  renderWeightBand(el.storeWeightHost);
+
+  buildTable(el.storeTable, storeRows, "store", state.metricRules.store, STORE_VISIBLE_COLUMNS);
 }
 
 function renderOutliers() {
   const metricColumn = state.selectedOutlierMetric;
-  const metricLabel = el.outlierMetricSelect.options[el.outlierMetricSelect.selectedIndex]?.text || metricColumn || "";
+  const metricLabel =
+    el.outlierMetricSelect.options[el.outlierMetricSelect.selectedIndex]?.text || metricColumn || "";
   const mode = el.outlierModeSelect?.value || "lowest";
   const sortDirection = mode === "highest" ? -1 : 1;
+
+  renderOutlierRankTable(el.outliersRankHost);
+
+  const isCsat = normalizeLookup(metricLabel).includes("csat");
+
+  const formatOutlierValue = (value) => {
+    const numeric = parseNumeric(value);
+    if (numeric === null) return "";
+    if (isCsat) return numeric.toFixed(2);
+    return `${numeric.toFixed(2)}%`;
+  };
 
   const rows = state.stores
     .map((row) => {
@@ -449,17 +630,23 @@ function renderOutliers() {
 
       const metricValue = parseNumeric(row[metricColumn]);
 
-      return {
-        District: normalizeText(row.District || row.DISTRICT),
-        Store: storeName,
-        [metricLabel]: metricValue,
-        "% to target": parsePercentText(row[metricColumn]),
-        __metricValue: metricValue,
-      };
+      return isCsat
+        ? {
+            "Store Name": storeName,
+            "CSAT Actual": formatOutlierValue(row[metricColumn]),
+            __metricValue: metricValue,
+          }
+        : {
+            "Store Name": storeName,
+            "% to target": formatOutlierValue(row[metricColumn]),
+            __metricValue: metricValue,
+          };
     })
-    .filter((row) => row.Store && row.__metricValue !== null)
+    .filter((row) => row["Store Name"] && row.__metricValue !== null)
     .sort((a, b) => {
-      if (a.__metricValue === b.__metricValue) return a.Store.toLowerCase().localeCompare(b.Store.toLowerCase());
+      if (a.__metricValue === b.__metricValue) {
+        return a["Store Name"].toLowerCase().localeCompare(b["Store Name"].toLowerCase());
+      }
       return (a.__metricValue - b.__metricValue) * sortDirection;
     })
     .slice(0, 15)
@@ -547,9 +734,15 @@ function parseWorkbook() {
 
   state.metricRules = parseMetricRules(metricRows);
   state.locations = locationRows;
-  state.regions = sortByLabel(enrichRows(regionRows, "region", state.metricRules.region), "region");
-  state.districts = sortByLabel(enrichRows(districtRows, "district", state.metricRules.district), "district");
-  state.stores = sortByLabel(enrichRows(storeRows, "store", state.metricRules.store), "store");
+  state.regions = enrichRows(regionRows, "region", state.metricRules.region).sort(
+    (a, b) => parseNumeric(a["Overall Rank"]) - parseNumeric(b["Overall Rank"])
+  );
+  state.districts = enrichRows(districtRows, "district", state.metricRules.district).sort(
+    (a, b) => parseNumeric(a["Overall Rank"]) - parseNumeric(b["Overall Rank"])
+  );
+  state.stores = enrichRows(storeRows, "store", state.metricRules.store).sort(
+    (a, b) => parseNumeric(a["Overall Rank"]) - parseNumeric(b["Overall Rank"])
+  );
 }
 
 async function loadWorkbook() {
