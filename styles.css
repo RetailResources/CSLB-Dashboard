@@ -215,6 +215,7 @@ select {
 
 .table-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border-radius: 0;
 }
 
@@ -355,5 +356,27 @@ select {
 
   .app-shell {
     padding: 16px;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .data-table {
+    min-width: 980px;
+  }
+
+  .data-table thead th,
+  .data-table tbody td {
+    font-size: 11px;
+    padding: 3px 4px;
+  }
+
+  .rank-table {
+    min-width: 280px;
+  }
+
+  .weight-band {
+    grid-template-columns: 180px 1fr;
   }
 }
