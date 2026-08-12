@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CSLB Sales Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">CSLB</p>
+          <h1>Sales Dashboard</h1>
+          <p class="subtle">Excel-backed performance dashboard for Region, District, and Store views</p>
+        </div>
+        <div class="topbar-actions">
+          <button id="btnDashboard" class="btn btn-primary">Dashboard</button>
+          <button id="btnOutliers" class="btn btn-secondary">Region Outliers</button>
+        </div>
+      </header>
+
+      <main>
+        <section id="statusBar" class="status-bar">
+          Loading workbook data from <code>sales-dashboard.xlsx</code>...
+        </section>
+
+        <section id="dashboardView" class="view">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>Region Summary</h2>
+                <p class="subtle">Top-level region performance from the Region Sheet</p>
+              </div>
+              <div id="regionMeta" class="meta-pill"></div>
+            </div>
+            <div class="table-wrap">
+              <table id="regionTable" class="data-table"></table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>District Ranking</h2>
+                <p class="subtle">District performance from the District Sheet</p>
+              </div>
+              <div id="districtMeta" class="meta-pill"></div>
+            </div>
+            <div class="table-wrap">
+              <table id="districtTable" class="data-table"></table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>District Drilldown</h2>
+                <p class="subtle">Select a district to view its district summary and store rows</p>
+              </div>
+              <div class="selector-group">
+                <label for="districtSelect">District</label>
+                <select id="districtSelect"></select>
+              </div>
+            </div>
+
+            <div id="selectedDistrictSummary" class="summary-panel"></div>
+
+            <div class="table-wrap">
+              <table id="storeTable" class="data-table"></table>
+            </div>
+          </div>
+        </section>
+
+        <section id="outliersView" class="view hidden">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2>Region Outliers</h2>
+                <p class="subtle">Select a metric to view the lowest or highest 15 stores by metric value</p>
+              </div>
+              <div class="selector-group">
+                <label for="outlierMetricSelect">Metric</label>
+                <select id="outlierMetricSelect"></select>
+              </div>
+              <div class="toggle-group">
+                <label for="outlierModeSelect">View</label>
+                <select id="outlierModeSelect">
+                  <option value="lowest">Lowest 15</option>
+                  <option value="highest">Highest 15</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="outliersMeta" class="summary-panel"></div>
+
+            <div class="table-wrap">
+              <table id="outliersTable" class="data-table"></table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
