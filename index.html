@@ -13,7 +13,7 @@
         <div>
           <p class="eyebrow">CSLB</p>
           <h1>Sales Dashboard</h1>
-          <p class="subtle">Excel-backed performance dashboard for Region, District, and Store views</p>
+          <p class="subtle">Excel-backed performance dashboard for Region, District, Store, and Outliers views</p>
         </div>
         <div class="topbar-actions">
           <button id="btnDashboard" class="btn btn-primary">Dashboard</button>
@@ -35,6 +35,10 @@
               </div>
               <div id="regionMeta" class="meta-pill"></div>
             </div>
+
+            <div id="regionRankHost"></div>
+            <div id="regionWeightHost"></div>
+
             <div class="table-wrap">
               <table id="regionTable" class="data-table"></table>
             </div>
@@ -48,6 +52,10 @@
               </div>
               <div id="districtMeta" class="meta-pill"></div>
             </div>
+
+            <div id="districtRankHost"></div>
+            <div id="districtWeightHost"></div>
+
             <div class="table-wrap">
               <table id="districtTable" class="data-table"></table>
             </div>
@@ -66,6 +74,9 @@
             </div>
 
             <div id="selectedDistrictSummary" class="summary-panel"></div>
+
+            <div id="storeRankHost"></div>
+            <div id="storeWeightHost"></div>
 
             <div class="table-wrap">
               <table id="storeTable" class="data-table"></table>
@@ -94,6 +105,7 @@
             </div>
 
             <div id="outliersMeta" class="summary-panel"></div>
+            <div id="outliersRankHost"></div>
 
             <div class="table-wrap">
               <table id="outliersTable" class="data-table"></table>
