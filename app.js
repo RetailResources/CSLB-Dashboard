@@ -20,67 +20,51 @@ const SHEET_CANDIDATES = {
 
 const METRIC_GROUPS = [
   {
-    key: "gplh",
     label: "GP Per Labor Hour",
-    aliases: ["GP Per Labor Hour", "GP/LH", "GPH", "GP Per Labor"],
-    valueAliases: ["GP Per Labor Hour %Tgt", "GP Per Labor Hour % Tgt", "GP/LH %Tgt", "GPH %Tgt"],
-    rankAliases: ["GP Per Labor Hour Rank", "GP/LH Rank", "GPH Rank"],
+    value: "GP Per Labor Hour %Tgt",
+    rank: "GP Per Labor Hour Rank",
     weight: "15%",
   },
   {
-    key: "ppact",
     label: "PP Act",
-    aliases: ["PP Act", "PP Acts", "PP Activity"],
-    valueAliases: ["PP Act %Tgt", "PP Act % Tgt", "PP Activity %Tgt"],
-    rankAliases: ["PP Act Attain Rank", "PP Act Rank", "PP Activity Rank"],
+    value: "PP Act %Tgt",
+    rank: "PP Act Attain Rank",
     weight: "15%",
   },
   {
-    key: "rebiz",
     label: "ReBiz Conv",
-    aliases: ["ReBiz Conv", "ReBiz", "Reservation Conversion"],
-    valueAliases: ["ReBiz Conv %Tgt", "ReBiz Conv % Tgt", "ReBiz %Tgt"],
-    rankAliases: ["ReBiz Conv Rank", "ReBiz Rank", "Reservation Conversion Rank"],
+    value: "ReBiz Conv %Tgt",
+    rank: "ReBiz Conv Rank",
     weight: "15%",
   },
   {
-    key: "accgp",
     label: "Acc GP Pct",
-    aliases: ["Acc GP Pct", "Acc GP", "Adjusted GP"],
-    valueAliases: ["Acc GP Pct Actual", "Acc GP Pct", "Acc GP Actual"],
-    rankAliases: ["Acc GP Pct Rank", "Acc GP Rank", "Adjusted GP Rank"],
+    value: "Acc GP Pct Actual",
+    rank: "Acc GP Pct Rank",
     weight: "10%",
   },
   {
-    key: "csat",
     label: "CSAT",
-    aliases: ["CSAT", "Customer Satisfaction"],
-    valueAliases: ["CSAT Actual", "CSAT", "Customer Satisfaction Actual"],
-    rankAliases: ["CSAT Rank", "Customer Satisfaction Rank"],
+    value: "CSAT Actual",
+    rank: "CSAT Rank",
     weight: "10%",
   },
   {
-    key: "visa",
     label: "Visa Priority",
-    aliases: ["Visa Priority", "Visa", "Priority Visa"],
-    valueAliases: ["Visa Priority Rate %Tg", "Visa Priority Rate %Tgt", "Visa Priority Rate", "Visa %Tgt"],
-    rankAliases: ["Visa Priority Rate Rank", "Visa Rank", "Priority Visa Rank"],
+    value: "Visa Priority Rate %Tg",
+    rank: "Visa Priority Rate Rank",
     weight: "15%",
   },
   {
-    key: "p360",
     label: "P360 Attach",
-    aliases: ["P360 Attach", "P360", "Premium Attach"],
-    valueAliases: ["P360 Attach Rate %Tgt", "P360 Attach Rate % Tgt", "P360 Attach %Tgt"],
-    rankAliases: ["P360 Attach Rate Rank", "P360 Rank", "Premium Attach Rank"],
+    value: "P360 Attach Rate %Tgt",
+    rank: "P360 Attach Rate Rank",
     weight: "10%",
   },
   {
-    key: "premium",
     label: "Premium Mix",
-    aliases: ["Premium Mix", "Premium Rate Plan", "Premium"],
-    valueAliases: ["Premium Mix Rate %Tgt", "Premium Mix Rate % Tgt", "Premium %Tgt"],
-    rankAliases: ["Premium Rate Plan Rank", "Premium Mix Rank", "Premium Rank"],
+    value: "Premium Mix Rate %Tgt",
+    rank: "Premium Rate Plan Rank",
     weight: "10%",
   },
 ];
@@ -149,27 +133,16 @@ function normalizeLookup(value) {
   return normalizeText(value).toLowerCase();
 }
 
-function normalizeHeaderVariant(value) {
-  return normalizeLookup(value)
-    .replace(/[^a-z0-9]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function headerMatches(candidate, target) {
-  const c = normalizeHeaderVariant(candidate);
-  const t = normalizeHeaderVariant(target);
-  return c === t || c.includes(t) || t.includes(c);
-}
-
 function parseNumeric(value) {
   if (value === null || value === undefined || value === "") return null;
   if (typeof value === "number") return value;
   const raw = String(value).trim();
   if (!raw) return null;
+
   const negative = /^\(.*\)$/.test(raw);
   const stripped = raw.replace(/[(),$%]/g, "").replace(/\s+/g, "");
   if (!stripped) return null;
+
   const num = Number(stripped);
   if (Number.isNaN(num)) return null;
   return negative ? -num : num;
@@ -247,88 +220,44 @@ function cleanRows(rows) {
   });
 }
 
-function getRowValue(row, possibleKeys) {
-  if (!row) return "";
-  const keys = Object.keys(row);
-
-  for (const desired of possibleKeys) {
-    const exact = keys.find((rowKey) => normalizeHeaderVariant(rowKey) === normalizeHeaderVariant(desired));
-    if (exact && row[exact] !== undefined && row[exact] !== null && row[exact] !== "") {
-      return row[exact];
-    }
-  }
-
-  for (const desired of possibleKeys) {
-    const fuzzy = keys.find((rowKey) => headerMatches(rowKey, desired));
-    if (fuzzy && row[fuzzy] !== undefined && row[fuzzy] !== null && row[fuzzy] !== "") {
-      return row[fuzzy];
-    }
-  }
-
-  return "";
-}
-
 function getPrimaryLabel(row, type) {
   if (!row) return "";
-  if (type === "region") {
-    return normalizeText(getRowValue(row, ["Region", "REGION", "Region Name"]));
-  }
-  if (type === "district") {
-    return normalizeText(getRowValue(row, ["District", "DISTRICT", "District Name"]));
-  }
+  if (type === "region") return normalizeText(row.Region || row["REGION"]);
+  if (type === "district") return normalizeText(row.District || row["DISTRICT"]);
   if (type === "store") {
     return normalizeText(
-      getRowValue(row, [
-        "Sap: Loaction",
-        "Sap: Location",
-        "SAP Location",
-        "Store Name",
-        "STORE NAME",
-        "Store",
-        "SAP",
-        "STORE CODE",
-      ])
+      row["Sap: Loaction"] ||
+        row["Sap: Location"] ||
+        row["STORE NAME"] ||
+        row.SAP ||
+        row["STORE CODE"]
     );
   }
   return "";
 }
 
-function findMetricGroupMatch(header, candidates) {
-  return candidates.find((candidate) => headerMatches(header, candidate));
-}
-
-function resolveMetricGroupColumns(row) {
+function detectMetricColumns(row) {
   const headers = Object.keys(row || {});
-  const groups = [];
+  const metrics = [];
 
-  for (const group of METRIC_GROUPS) {
-    const percentColumn =
-      headers.find((header) => findMetricGroupMatch(header, group.valueAliases)) ||
-      headers.find((header) => findMetricGroupMatch(header, group.aliases.map((a) => `${a} %Tgt`))) ||
-      headers.find((header) => findMetricGroupMatch(header, group.aliases.map((a) => `${a} % Target`)));
+  for (const cfg of METRIC_GROUPS) {
+    const percentColumn = headers.find((header) =>
+      cfg.value === header || normalizeLookup(header) === normalizeLookup(cfg.value)
+    );
+    const rankColumn = headers.find((header) =>
+      cfg.rank === header || normalizeLookup(header) === normalizeLookup(cfg.rank)
+    );
 
-    const rankColumn =
-      headers.find((header) => findMetricGroupMatch(header, group.rankAliases)) ||
-      headers.find((header) => findMetricGroupMatch(header, group.aliases.map((a) => `${a} Rank`)));
-
-    groups.push({
-      ...group,
-      percentColumn: percentColumn || "",
-      rankColumn: rankColumn || "",
-    });
+    if (percentColumn || rankColumn) {
+      metrics.push({
+        label: cfg.label,
+        percentColumn: percentColumn || "",
+        rankColumn: rankColumn || "",
+      });
+    }
   }
 
-  return groups;
-}
-
-function detectMetricColumns(row) {
-  return resolveMetricGroupColumns(row)
-    .filter((g) => g.percentColumn || g.rankColumn)
-    .map((g) => ({
-      label: g.label,
-      percentColumn: g.percentColumn,
-      rankColumn: g.rankColumn,
-    }));
+  return metrics;
 }
 
 function parseMetricRules(sheetRows) {
@@ -424,7 +353,6 @@ function buildTable(tableEl, rows, type, rankRules = [], visibleColumns = null) 
   const headers = (visibleColumns && visibleColumns.length)
     ? visibleColumns.filter((h) => Object.prototype.hasOwnProperty.call(rows[0], h))
     : Object.keys(rows[0]).filter((h) => !isSeparatorColumn(h) && !String(h).startsWith("__"));
-
   const thead = document.createElement("thead");
   const headerRow = document.createElement("tr");
 
@@ -450,12 +378,8 @@ function buildTable(tableEl, rows, type, rankRules = [], visibleColumns = null) 
       const q = row.__quintile || determineQuintileFromRank(row["Overall Rank"], rankRules);
       const cls = quintileClass(q);
 
-      if (header === "Quintile Position") td.classList.add("metric-cell", cls);
-      if (header === "Overall Rank") td.classList.add("metric-cell", cls);
-
-      if (isMetricLike && header.endsWith("Rank") && cls) {
-        td.classList.add("metric-cell", cls);
-      }
+      if (isMetricLike && cls) td.classList.add("metric-cell", cls);
+      if (header === "Quintile Position" && cls) td.classList.add("metric-cell", cls);
 
       tr.appendChild(td);
     });
@@ -492,7 +416,7 @@ function renderRankTable(container, rows) {
 }
 
 function renderWeightBand(container) {
-  const weights = METRIC_GROUPS.map((g) => g.weight);
+  const weights = ["15%", "15%", "15%", "10%", "10%", "15%", "10%", "10%"];
   container.innerHTML = `
     <div class="weight-band">
       <div class="weight-spacer"></div>
