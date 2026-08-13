@@ -138,20 +138,12 @@ function parseNumeric(value) {
   if (typeof value === "number") return value;
   const raw = String(value).trim();
   if (!raw) return null;
-
   const negative = /^\(.*\)$/.test(raw);
   const stripped = raw.replace(/[(),$%]/g, "").replace(/\s+/g, "");
   if (!stripped) return null;
-
   const num = Number(stripped);
   if (Number.isNaN(num)) return null;
   return negative ? -num : num;
-}
-
-function parsePercentText(value) {
-  if (value === null || value === undefined || value === "") return "";
-  if (typeof value === "number") return `${value.toFixed(2)}%`;
-  return normalizeText(value);
 }
 
 function sheetToObjects(sheet) {
@@ -353,6 +345,7 @@ function buildTable(tableEl, rows, type, rankRules = [], visibleColumns = null) 
   const headers = (visibleColumns && visibleColumns.length)
     ? visibleColumns.filter((h) => Object.prototype.hasOwnProperty.call(rows[0], h))
     : Object.keys(rows[0]).filter((h) => !isSeparatorColumn(h) && !String(h).startsWith("__"));
+
   const thead = document.createElement("thead");
   const headerRow = document.createElement("tr");
 
@@ -671,7 +664,7 @@ function renderOutliers() {
       }
       return (a.__metricValue - b.__metricValue) * sortDirection;
     })
-    .slice(0, 15)
+    .slice(0, 20)
     .map(({ __metricValue, ...rest }) => rest);
 
   el.outliersMeta.innerHTML = `
@@ -682,7 +675,7 @@ function renderOutliers() {
       </div>
       <div class="summary-item">
         <span class="summary-label">View</span>
-        <span class="summary-value">${escapeHtml(mode === "highest" ? "Highest 15" : "Lowest 15")}</span>
+        <span class="summary-value">${escapeHtml(mode === "highest" ? "Highest 20" : "Lowest 20")}</span>
       </div>
       <div class="summary-item">
         <span class="summary-label">Stores shown</span>
