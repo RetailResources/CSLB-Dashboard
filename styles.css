@@ -331,7 +331,10 @@ select {
 }
 
 #outliersView .data-table {
-  min-width: 900px;
+  width: auto;
+  min-width: unset;
+  table-layout: auto;
+  display: inline-table;
 }
 
 #outliersRankHost {
