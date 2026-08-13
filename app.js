@@ -1,94 +1,89 @@
-/* =========================================================
-   CSLB Sales Dashboard – app.js
-   Static site, loaded after XLSX via CDN in index.html
-   ========================================================= */
+/* global XLSX */
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
+const WORKBOOK_URL = "sales-dashboard.xlsx";
 
-const WORKBOOK_PATH = "sales-dashboard.xlsx";
-
-// Possible sheet name variants (first match wins)
-const SHEET_VARIANTS = {
-  region: ["Region", "REGION", "Regions"],
-  district: ["District", "DISTRICT", "Districts"],
-  store: ["Store", "STORE", "Stores"],
-  location: ["Location List", "Locations", "Location"],
-  metrics: ["Metric Rankings", "Metrics", "Metric Ranking"],
+const QUINTILE_CLASSES = {
+  1: "q1",
+  2: "q2",
+  3: "q3",
+  4: "q4",
+  5: "q5",
 };
 
-// Metric groups – value/rank list fallbacks so renamed columns still resolve
+const SHEET_CANDIDATES = {
+  region: ["Region Sheet", "Region", "Region Data"],
+  district: ["District Sheet", "District", "District Data"],
+  store: ["Store Sheet", "Store", "Store Data"],
+  locations: ["Location List Sheet", "Location List", "Locations"],
+  metricRules: ["Metric Rankings Sheet", "Metric Rankings", "Rankings"],
+};
+
 const METRIC_GROUPS = [
   {
-    label: "GP/LH",
+    key: "gplh",
+    label: "GP Per Labor Hour",
+    aliases: ["GP Per Labor Hour", "GP/LH", "GPH", "GP Per Labor"],
+    valueAliases: ["GP Per Labor Hour %Tgt", "GP Per Labor Hour % Tgt", "GP/LH %Tgt", "GPH %Tgt"],
+    rankAliases: ["GP Per Labor Hour Rank", "GP/LH Rank", "GPH Rank"],
     weight: "15%",
-    valueFallbacks: ["GP Per Labor Hour %Tgt", "GP Per Labor Hour % Tgt", "GP/LH %Tgt", "GP/LH % Tgt", "GP Per Labor Hour Pct Tgt"],
-    rankFallbacks: ["GP Per Labor Hour Rank", "GP/LH Rank", "GPLH Rank"],
-    isCsat: false,
-    actualFallbacks: ["GP Per Labor Hour Actual", "GP/LH Actual"],
   },
   {
+    key: "ppact",
     label: "PP Act",
+    aliases: ["PP Act", "PP Acts", "PP Activity"],
+    valueAliases: ["PP Act %Tgt", "PP Act % Tgt", "PP Activity %Tgt"],
+    rankAliases: ["PP Act Attain Rank", "PP Act Rank", "PP Activity Rank"],
     weight: "15%",
-    valueFallbacks: ["PP Act %Tgt", "PP Act % Tgt", "PP Act % Target", "PP Acts %Tgt", "PP Acts Pct Tgt"],
-    rankFallbacks: ["PP Act Attain Rank", "PP Act Rank", "PP Acts Rank"],
-    isCsat: false,
-    actualFallbacks: ["PP Acts", "PP Act"],
   },
   {
+    key: "rebiz",
     label: "ReBiz Conv",
+    aliases: ["ReBiz Conv", "ReBiz", "Reservation Conversion"],
+    valueAliases: ["ReBiz Conv %Tgt", "ReBiz Conv % Tgt", "ReBiz %Tgt"],
+    rankAliases: ["ReBiz Conv Rank", "ReBiz Rank", "Reservation Conversion Rank"],
     weight: "15%",
-    valueFallbacks: ["ReBiz Conv %Tgt", "ReBiz Conv % Tgt", "Rebiz Conv %Tgt", "ReBiz Conv % Target"],
-    rankFallbacks: ["ReBiz Conv Rank", "Rebiz Conv Rank"],
-    isCsat: false,
-    actualFallbacks: ["Rebiz Conv", "ReBiz Conv"],
   },
   {
-    label: "Acc GP",
+    key: "accgp",
+    label: "Acc GP Pct",
+    aliases: ["Acc GP Pct", "Acc GP", "Adjusted GP"],
+    valueAliases: ["Acc GP Pct Actual", "Acc GP Pct", "Acc GP Actual"],
+    rankAliases: ["Acc GP Pct Rank", "Acc GP Rank", "Adjusted GP Rank"],
     weight: "10%",
-    valueFallbacks: ["Acc GP Pct Actual", "Acc GP % Actual", "Acc GP Pct", "Acc GP %"],
-    rankFallbacks: ["Acc GP Pct Rank", "Acc GP Rank", "Acc GP % Rank"],
-    isCsat: false,
-    actualFallbacks: ["Acc GP Pct Actual", "Acc GP Actual"],
   },
   {
+    key: "csat",
     label: "CSAT",
+    aliases: ["CSAT", "Customer Satisfaction"],
+    valueAliases: ["CSAT Actual", "CSAT", "Customer Satisfaction Actual"],
+    rankAliases: ["CSAT Rank", "Customer Satisfaction Rank"],
     weight: "10%",
-    valueFallbacks: ["CSAT Actual", "CSAT Score", "CSAT"],
-    rankFallbacks: ["CSAT Rank"],
-    isCsat: true,
-    actualFallbacks: ["CSAT Actual", "CSAT Score"],
   },
   {
+    key: "visa",
     label: "Visa Priority",
+    aliases: ["Visa Priority", "Visa", "Priority Visa"],
+    valueAliases: ["Visa Priority Rate %Tg", "Visa Priority Rate %Tgt", "Visa Priority Rate", "Visa %Tgt"],
+    rankAliases: ["Visa Priority Rate Rank", "Visa Rank", "Priority Visa Rank"],
     weight: "15%",
-    valueFallbacks: ["Visa Priority Rate %Tg", "Visa Priority Rate %Tgt", "Visa Priority Rate % Tgt", "Visa Priority %Tgt"],
-    rankFallbacks: ["Visa Priority Rate Rank", "Visa Priority Rank"],
-    isCsat: false,
-    actualFallbacks: ["Visa Priority Rate", "Visa Priority Apps"],
   },
   {
+    key: "p360",
     label: "P360 Attach",
+    aliases: ["P360 Attach", "P360", "Premium Attach"],
+    valueAliases: ["P360 Attach Rate %Tgt", "P360 Attach Rate % Tgt", "P360 Attach %Tgt"],
+    rankAliases: ["P360 Attach Rate Rank", "P360 Rank", "Premium Attach Rank"],
     weight: "10%",
-    valueFallbacks: ["P360 Attach Rate %Tgt", "P360 Attach Rate % Tgt", "P360 %Tgt", "Indexed P360 Attach Rate"],
-    rankFallbacks: ["P360 Attach Rate Rank", "P360 Rank"],
-    isCsat: false,
-    actualFallbacks: ["Indexed P360 Attach Rate", "P360 Attach Rate"],
   },
   {
+    key: "premium",
     label: "Premium Mix",
+    aliases: ["Premium Mix", "Premium Rate Plan", "Premium"],
+    valueAliases: ["Premium Mix Rate %Tgt", "Premium Mix Rate % Tgt", "Premium %Tgt"],
+    rankAliases: ["Premium Rate Plan Rank", "Premium Mix Rank", "Premium Rank"],
     weight: "10%",
-    valueFallbacks: ["Premium Mix Rate %Tgt", "Premium Mix Rate % Tgt", "Premium Mix %Tgt"],
-    rankFallbacks: ["Premium Rate Plan Rank", "Premium Mix Rate Rank", "Premium Mix Rank"],
-    isCsat: false,
-    actualFallbacks: ["Premium Mix Rate", "Premium Lines"],
   },
 ];
-
-// ---------------------------------------------------------------------------
-// State
-// ---------------------------------------------------------------------------
 
 const state = {
   workbook: null,
@@ -96,369 +91,504 @@ const state = {
   districts: [],
   stores: [],
   locations: [],
-  metricRankingRows: [],
-  regionRankTable: [],
-  districtRankTable: [],
-  storeRankTable: [],
-  selectedDistrict: "",
-  outlierMetric: null,
-  outlierMode: "lowest",
-  // resolved column maps per metric group per sheet
-  resolvedColumns: { region: [], district: [], store: [] },
+  metricRules: {
+    region: [],
+    district: [],
+    store: [],
+    weights: [],
+  },
+  selectedDistrict: null,
+  selectedOutlierMetric: null,
+  currentView: "dashboard",
 };
 
-// ---------------------------------------------------------------------------
-// DOM refs (populated after DOMContentLoaded)
-// ---------------------------------------------------------------------------
+const el = {
+  statusBar: document.getElementById("statusBar"),
+  dashboardView: document.getElementById("dashboardView"),
+  outliersView: document.getElementById("outliersView"),
+  btnDashboard: document.getElementById("btnDashboard"),
+  btnOutliers: document.getElementById("btnOutliers"),
+  regionTable: document.getElementById("regionTable"),
+  districtTable: document.getElementById("districtTable"),
+  storeTable: document.getElementById("storeTable"),
+  outliersTable: document.getElementById("outliersTable"),
+  districtSelect: document.getElementById("districtSelect"),
+  outlierMetricSelect: document.getElementById("outlierMetricSelect"),
+  outlierModeSelect: document.getElementById("outlierModeSelect"),
+  outliersRankHost: document.getElementById("outliersRankHost"),
+  regionMeta: document.getElementById("regionMeta"),
+  districtMeta: document.getElementById("districtMeta"),
+  selectedDistrictSummary: document.getElementById("selectedDistrictSummary"),
+  outliersMeta: document.getElementById("outliersMeta"),
+  regionRankHost: document.getElementById("regionRankHost"),
+  regionWeightHost: document.getElementById("regionWeightHost"),
+  districtRankHost: document.getElementById("districtRankHost"),
+  districtWeightHost: document.getElementById("districtWeightHost"),
+  storeRankHost: document.getElementById("storeRankHost"),
+  storeWeightHost: document.getElementById("storeWeightHost"),
+};
 
-let el = {};
-
-function initEl() {
-  const ids = [
-    "statusBar", "dashboardView", "outliersView",
-    "btnDashboard", "btnOutliers",
-    "regionMeta", "regionRankHost", "regionWeightHost", "regionTable",
-    "districtMeta", "districtRankHost", "districtWeightHost", "districtTable",
-    "districtSelect",
-    "selectedDistrictSummary", "storeRankHost", "storeWeightHost", "storeTable",
-    "outlierMetricSelect", "outlierModeSelect",
-    "outliersMeta", "outliersRankHost", "outliersTable",
-  ];
-  ids.forEach((id) => {
-    el[id] = document.getElementById(id);
-  });
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
-// ---------------------------------------------------------------------------
-// Utilities
-// ---------------------------------------------------------------------------
+function normalizeKey(key) {
+  return String(key || "").replace(/\s+/g, " ").trim();
+}
 
-function norm(s) {
-  return String(s ?? "")
-    .toLowerCase()
+function normalizeText(value) {
+  return String(value ?? "").trim().replace(/\s+/g, " ");
+}
+
+function normalizeLookup(value) {
+  return normalizeText(value).toLowerCase();
+}
+
+function normalizeHeaderVariant(value) {
+  return normalizeLookup(value)
     .replace(/[^a-z0-9]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function resolveKey(obj, candidates) {
-  if (!obj) return undefined;
-  const keys = Object.keys(obj);
-
-  // 1) Exact case-insensitive match (preserves special chars like % so %Tgt != Tgt)
-  for (const c of candidates) {
-    const cl = c.toLowerCase();
-    const match = keys.find((k) => k.toLowerCase() === cl);
-    if (match !== undefined) return match;
-  }
-
-  // 2) Normalized exact match (strips punctuation)
-  for (const c of candidates) {
-    const nc = norm(c);
-    const match = keys.find((k) => norm(k) === nc);
-    if (match !== undefined) return match;
-  }
-
-  // 3) Fuzzy partial (last resort)
-  for (const c of candidates) {
-    const nc = norm(c);
-    const match = keys.find((k) => norm(k).includes(nc) || nc.includes(norm(k)));
-    if (match !== undefined) return match;
-  }
-
-  return undefined;
+function headerMatches(candidate, target) {
+  const c = normalizeHeaderVariant(candidate);
+  const t = normalizeHeaderVariant(target);
+  return c === t || c.includes(t) || t.includes(c);
 }
 
-function getVal(row, candidates) {
-  if (!row) return "";
-  const key = resolveKey(row, candidates);
-  return key !== undefined ? row[key] : "";
+function parseNumeric(value) {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value === "number") return value;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  const negative = /^\(.*\)$/.test(raw);
+  const stripped = raw.replace(/[(),$%]/g, "").replace(/\s+/g, "");
+  if (!stripped) return null;
+  const num = Number(stripped);
+  if (Number.isNaN(num)) return null;
+  return negative ? -num : num;
 }
 
-function fmtNum(v) {
-  if (v === null || v === undefined || v === "") return "";
-  if (typeof v === "number") {
-    if (Number.isInteger(v)) return String(v);
-    return v.toFixed(2);
+function parsePercentText(value) {
+  if (value === null || value === undefined || value === "") return "";
+  if (typeof value === "number") return `${value.toFixed(2)}%`;
+  return normalizeText(value);
+}
+
+function sheetToObjects(sheet) {
+  if (!sheet) return [];
+  const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+  return rows.map((row) => {
+    const normalized = {};
+    Object.entries(row).forEach(([key, value]) => {
+      normalized[normalizeKey(key)] = typeof value === "string" ? normalizeText(value) : value;
+    });
+    return normalized;
+  });
+}
+
+function getSheetWithFallback(workbook, candidates, includeContains = true) {
+  const names = workbook?.SheetNames || [];
+  for (const candidate of candidates) {
+    const exact = names.find((sheetName) => normalizeLookup(sheetName) === normalizeLookup(candidate));
+    if (exact) return workbook.Sheets[exact];
   }
-  return String(v);
-}
-
-function fmtPct(v) {
-  if (v === null || v === undefined || v === "") return "";
-  const n = typeof v === "number" ? v : parseFloat(v);
-  if (isNaN(n)) return String(v);
-  return (n * 100).toFixed(1) + "%";
-}
-
-function quintileClass(qp) {
-  const n = parseInt(qp, 10);
-  if (n >= 1 && n <= 5) return `q${n}`;
-  return "";
-}
-
-// ---------------------------------------------------------------------------
-// Sheet name resolution
-// ---------------------------------------------------------------------------
-
-function findSheet(wb, variants) {
-  for (const v of variants) {
-    const match = wb.SheetNames.find((s) => norm(s) === norm(v));
-    if (match) return wb.Sheets[match];
-  }
-  // fuzzy
-  for (const v of variants) {
-    const match = wb.SheetNames.find((s) => norm(s).includes(norm(v)));
-    if (match) return wb.Sheets[match];
+  if (!includeContains) return null;
+  for (const candidate of candidates) {
+    const found = names.find((sheetName) => normalizeLookup(sheetName).includes(normalizeLookup(candidate)));
+    if (found) return workbook.Sheets[found];
   }
   return null;
 }
 
-// ---------------------------------------------------------------------------
-// Column resolution (resolved once after workbook load)
-// ---------------------------------------------------------------------------
-
-function buildResolvedColumns(rows) {
-  if (!rows || !rows.length) return METRIC_GROUPS.map(() => ({ valueKey: null, rankKey: null }));
-  const sample = rows[0];
-  return METRIC_GROUPS.map((g) => ({
-    valueKey: resolveKey(sample, g.valueFallbacks),
-    rankKey: resolveKey(sample, g.rankFallbacks),
-  }));
+function findColumn(row, possibleNames) {
+  const keys = Object.keys(row || {});
+  return (
+    keys.find((k) => possibleNames.some((candidate) => normalizeLookup(k) === normalizeLookup(candidate))) ||
+    keys.find((k) => possibleNames.some((candidate) => normalizeLookup(k).includes(normalizeLookup(candidate))))
+  );
 }
 
-// ---------------------------------------------------------------------------
-// Load workbook
-// ---------------------------------------------------------------------------
-
-function setStatus(msg, isError = false) {
-  if (!el.statusBar) return;
-  el.statusBar.textContent = msg;
-  el.statusBar.style.color = isError ? "#c00" : "";
-}
-
-async function loadWorkbook() {
-  setStatus("Loading workbook…");
-  try {
-    const resp = await fetch(WORKBOOK_PATH);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const buf = await resp.arrayBuffer();
-    const wb = XLSX.read(buf, { type: "array" });
-    state.workbook = wb;
-
-    parseSheets(wb);
-    populateDistrictSelect();
-    populateOutlierMetricSelect();
-    renderDashboard();
-    setStatus(`Loaded: ${state.regions.length} regions, ${state.districts.length} districts, ${state.stores.length} stores.`);
-  } catch (e) {
-    setStatus(`Error loading workbook: ${e.message}`, true);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Parse sheets
-// ---------------------------------------------------------------------------
-
-function sheetRows(wb, variants) {
-  const ws = findSheet(wb, variants);
-  if (!ws) return [];
-  return XLSX.utils.sheet_to_json(ws, { defval: "" });
-}
-
-function parseRankingTables(rows) {
-  let section = null;
-  const tables = { region: [], district: [], store: [] };
-  const sectionMap = {
-    "region ranking table": "region",
-    "district ranking table": "district",
-    "store ranking table": "store",
-  };
-  for (const row of rows) {
-    const first = norm(String(Object.values(row)[0] ?? ""));
-    if (sectionMap[first] !== undefined) { section = sectionMap[first]; continue; }
-    if (first === "quintile position") continue; // header row
-    const vals = Object.values(row);
-    const qp = parseInt(vals[0], 10);
-    const minR = parseInt(vals[1], 10);
-    const maxR = parseInt(vals[2], 10);
-    if (!isNaN(qp) && !isNaN(minR) && !isNaN(maxR) && section) {
-      tables[section].push([qp, minR, maxR]);
-    }
-  }
-  // fallback defaults
-  if (!tables.region.length) tables.region = [[1,1,1],[2,2,3],[3,3,3],[4,4,4]];
-  if (!tables.district.length) tables.district = [[1,1,7],[2,8,14],[3,15,22],[4,23,29],[5,30,37]];
-  if (!tables.store.length) tables.store = [[1,1,72],[2,73,144],[3,145,216],[4,217,288],[5,289,360]];
-  return tables;
-}
-
-function parseSheets(wb) {
-  state.regions = sheetRows(wb, SHEET_VARIANTS.region);
-  state.districts = sheetRows(wb, SHEET_VARIANTS.district);
-  state.stores = sheetRows(wb, SHEET_VARIANTS.store);
-  state.locations = sheetRows(wb, SHEET_VARIANTS.location);
-  state.metricRankingRows = sheetRows(wb, SHEET_VARIANTS.metrics);
-
-  const tables = parseRankingTables(state.metricRankingRows);
-  state.regionRankTable = tables.region;
-  state.districtRankTable = tables.district;
-  state.storeRankTable = tables.store;
-
-  state.resolvedColumns.region = buildResolvedColumns(state.regions);
-  state.resolvedColumns.district = buildResolvedColumns(state.districts);
-  state.resolvedColumns.store = buildResolvedColumns(state.stores);
-
-  // Default selected district
-  if (state.districts.length) {
-    state.selectedDistrict = getVal(state.districts[0], ["District", "District Name"]);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Quintile from rank
-// ---------------------------------------------------------------------------
-
-function quintileFromRank(rank, rankTable) {
-  const r = parseInt(rank, 10);
-  if (isNaN(r)) return "";
-  for (const [qp, min, max] of rankTable) {
-    if (r >= min && r <= max) return String(qp);
+function determineQuintileFromRank(rankValue, rules) {
+  const rank = parseNumeric(rankValue);
+  if (rank === null || !Array.isArray(rules)) return "";
+  for (const rule of rules) {
+    const min = parseNumeric(rule["Min Rank"]);
+    const max = parseNumeric(rule["Max Rank"]);
+    const q = rule["Quintile Position"];
+    if (min === null || max === null || q === undefined || q === "") continue;
+    if (rank >= min && rank <= max) return String(q);
   }
   return "";
 }
 
-// ---------------------------------------------------------------------------
-// Populate selects
-// ---------------------------------------------------------------------------
-
-function populateDistrictSelect() {
-  if (!el.districtSelect) return;
-  el.districtSelect.innerHTML = "";
-  state.districts.forEach((row) => {
-    const name = getVal(row, ["District", "District Name"]);
-    const opt = document.createElement("option");
-    opt.value = name;
-    opt.textContent = name;
-    el.districtSelect.appendChild(opt);
-  });
-  if (state.selectedDistrict) el.districtSelect.value = state.selectedDistrict;
+function quintileClass(q) {
+  return QUINTILE_CLASSES[String(q).trim()] || "";
 }
 
-function populateOutlierMetricSelect() {
-  if (!el.outlierMetricSelect) return;
-  el.outlierMetricSelect.innerHTML = "";
-  METRIC_GROUPS.forEach((g, i) => {
-    const opt = document.createElement("option");
-    opt.value = String(i);
-    opt.textContent = g.label;
-    el.outlierMetricSelect.appendChild(opt);
-  });
-  state.outlierMetric = 0;
+function isSeparatorColumn(header) {
+  return normalizeLookup(header) === "*";
 }
 
-// ---------------------------------------------------------------------------
-// Render helpers: rank table + weight band
-// ---------------------------------------------------------------------------
+function cleanRows(rows) {
+  return rows.map((row) => {
+    const out = {};
+    Object.entries(row).forEach(([key, value]) => {
+      if (isSeparatorColumn(key)) return;
+      out[key] = value;
+    });
+    return out;
+  });
+}
 
-function renderRankTable(container, rows) {
-  if (!container) return;
-  container.innerHTML = "";
-  const tbl = document.createElement("table");
-  tbl.className = "rank-table";
+function getRowValue(row, possibleKeys) {
+  if (!row) return "";
+  const keys = Object.keys(row);
+
+  for (const desired of possibleKeys) {
+    const exact = keys.find((rowKey) => normalizeHeaderVariant(rowKey) === normalizeHeaderVariant(desired));
+    if (exact && row[exact] !== undefined && row[exact] !== null && row[exact] !== "") {
+      return row[exact];
+    }
+  }
+
+  for (const desired of possibleKeys) {
+    const fuzzy = keys.find((rowKey) => headerMatches(rowKey, desired));
+    if (fuzzy && row[fuzzy] !== undefined && row[fuzzy] !== null && row[fuzzy] !== "") {
+      return row[fuzzy];
+    }
+  }
+
+  return "";
+}
+
+function getPrimaryLabel(row, type) {
+  if (!row) return "";
+  if (type === "region") {
+    return normalizeText(getRowValue(row, ["Region", "REGION", "Region Name"]));
+  }
+  if (type === "district") {
+    return normalizeText(getRowValue(row, ["District", "DISTRICT", "District Name"]));
+  }
+  if (type === "store") {
+    return normalizeText(
+      getRowValue(row, [
+        "Sap: Loaction",
+        "Sap: Location",
+        "SAP Location",
+        "Store Name",
+        "STORE NAME",
+        "Store",
+        "SAP",
+        "STORE CODE",
+      ])
+    );
+  }
+  return "";
+}
+
+function findMetricGroupMatch(header, candidates) {
+  return candidates.find((candidate) => headerMatches(header, candidate));
+}
+
+function resolveMetricGroupColumns(row) {
+  const headers = Object.keys(row || {});
+  const groups = [];
+
+  for (const group of METRIC_GROUPS) {
+    const percentColumn =
+      headers.find((header) => findMetricGroupMatch(header, group.valueAliases)) ||
+      headers.find((header) => findMetricGroupMatch(header, group.aliases.map((a) => `${a} %Tgt`))) ||
+      headers.find((header) => findMetricGroupMatch(header, group.aliases.map((a) => `${a} % Target`)));
+
+    const rankColumn =
+      headers.find((header) => findMetricGroupMatch(header, group.rankAliases)) ||
+      headers.find((header) => findMetricGroupMatch(header, group.aliases.map((a) => `${a} Rank`)));
+
+    groups.push({
+      ...group,
+      percentColumn: percentColumn || "",
+      rankColumn: rankColumn || "",
+    });
+  }
+
+  return groups;
+}
+
+function detectMetricColumns(row) {
+  return resolveMetricGroupColumns(row)
+    .filter((g) => g.percentColumn || g.rankColumn)
+    .map((g) => ({
+      label: g.label,
+      percentColumn: g.percentColumn,
+      rankColumn: g.rankColumn,
+    }));
+}
+
+function parseMetricRules(sheetRows) {
+  const rules = {
+    region: [],
+    district: [],
+    store: [],
+    weights: [],
+  };
+
+  let section = "weights";
+
+  for (const row of sheetRows) {
+    const values = Object.values(row).map((v) => normalizeText(v)).filter(Boolean);
+    if (!values.length) continue;
+
+    const first = normalizeLookup(values[0]);
+
+    if (first === "region ranking table") {
+      section = "region";
+      continue;
+    }
+    if (first === "district ranking table") {
+      section = "district";
+      continue;
+    }
+    if (first === "store ranking table") {
+      section = "store";
+      continue;
+    }
+    if (first === "metric" && values.length > 1) {
+      section = "weights";
+      continue;
+    }
+
+    if (section === "weights" && row.Metric) {
+      rules.weights.push({ Metric: row.Metric, Weighting: row.Weighting });
+    } else if (section === "region" && row["Quintile Position"]) {
+      rules.region.push(row);
+    } else if (section === "district" && row["Quintile Position"]) {
+      rules.district.push(row);
+    } else if (section === "store" && row["Quintile Position"]) {
+      rules.store.push(row);
+    }
+  }
+
+  return rules;
+}
+
+function enrichRows(rows, type, quintileRules) {
+  return rows.map((row) => {
+    const copy = { ...row };
+    copy.__type = type;
+    copy.__label = getPrimaryLabel(copy, type);
+
+    if (!copy["Quintile Position"]) {
+      const rankKey = findColumn(copy, ["Overall Rank"]);
+      copy["Quintile Position"] = determineQuintileFromRank(rankKey ? copy[rankKey] : null, quintileRules);
+    }
+
+    copy.__quintile = String(copy["Quintile Position"] || "").trim();
+    return copy;
+  });
+}
+
+function findDistrictRow(districtName) {
+  const target = normalizeLookup(districtName);
+  return state.districts.find((row) => normalizeLookup(row.District || row.DISTRICT) === target) || null;
+}
+
+function getDistrictStores(districtName) {
+  const target = normalizeLookup(districtName);
+  return state.stores.filter((row) => normalizeLookup(row.District || row.DISTRICT) === target);
+}
+
+function formatCellValue(value) {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "number") {
+    if (Number.isInteger(value)) return String(value);
+    return value.toFixed(2);
+  }
+  return String(value);
+}
+
+function buildTable(tableEl, rows, type, rankRules = [], visibleColumns = null) {
+  tableEl.innerHTML = "";
+
+  if (!rows || !rows.length) {
+    tableEl.innerHTML = `<thead><tr><th>No data found</th></tr></thead><tbody><tr><td>Nothing to display.</td></tr></tbody>`;
+    return;
+  }
+
+  const headers = (visibleColumns && visibleColumns.length)
+    ? visibleColumns.filter((h) => Object.prototype.hasOwnProperty.call(rows[0], h))
+    : Object.keys(rows[0]).filter((h) => !isSeparatorColumn(h) && !String(h).startsWith("__"));
+
   const thead = document.createElement("thead");
-  const hrow = document.createElement("tr");
-  ["Quintile Position", "Min Rank", "Max Rank"].forEach((h) => {
+  const headerRow = document.createElement("tr");
+
+  headers.forEach((header) => {
     const th = document.createElement("th");
-    th.textContent = h;
-    hrow.appendChild(th);
+    th.textContent = header;
+    headerRow.appendChild(th);
   });
-  thead.appendChild(hrow);
-  tbl.appendChild(thead);
+
+  thead.appendChild(headerRow);
+  tableEl.appendChild(thead);
+
   const tbody = document.createElement("tbody");
-  rows.forEach(([qp, min, max]) => {
+
+  rows.forEach((row) => {
     const tr = document.createElement("tr");
-    [qp, min, max].forEach((v, i) => {
+    headers.forEach((header) => {
       const td = document.createElement("td");
-      td.textContent = v;
-      if (i === 0) td.classList.add(quintileClass(v));
+      const value = row[header];
+      td.textContent = formatCellValue(value);
+
+      const isMetricLike = /%Tgt|%Tg|Rank$|Actual$|Tgt$|Rate$|Score$/i.test(header);
+      const q = row.__quintile || determineQuintileFromRank(row["Overall Rank"], rankRules);
+      const cls = quintileClass(q);
+
+      if (header === "Quintile Position") td.classList.add("metric-cell", cls);
+      if (header === "Overall Rank") td.classList.add("metric-cell", cls);
+
+      if (isMetricLike && header.endsWith("Rank") && cls) {
+        td.classList.add("metric-cell", cls);
+      }
+
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
   });
-  tbl.appendChild(tbody);
-  container.appendChild(tbl);
+
+  tableEl.appendChild(tbody);
+}
+
+function renderRankTable(container, rows) {
+  container.innerHTML = `
+    <table class="data-table rank-table">
+      <thead>
+        <tr>
+          <th>Quintile Position</th>
+          <th>Min Rank</th>
+          <th>Max Rank</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows
+          .map(
+            (r) => `
+            <tr>
+              <td class="${quintileClass(r[0])}">${r[0]}</td>
+              <td class="${quintileClass(r[0])}">${r[1]}</td>
+              <td class="${quintileClass(r[0])}">${r[2]}</td>
+            </tr>`
+          )
+          .join("")}
+      </tbody>
+    </table>
+  `;
 }
 
 function renderWeightBand(container) {
-  if (!container) return;
-  container.innerHTML = "";
-  const band = document.createElement("div");
-  band.className = "weight-band";
-  const spacer = document.createElement("div");
-  spacer.className = "weight-spacer";
-  band.appendChild(spacer);
-  const grid = document.createElement("div");
-  grid.className = "weight-grid";
-  METRIC_GROUPS.forEach((g) => {
-    const cell = document.createElement("div");
-    cell.className = "weight-cell";
-    cell.textContent = g.weight;
-    grid.appendChild(cell);
-  });
-  band.appendChild(grid);
-  container.appendChild(band);
+  const weights = METRIC_GROUPS.map((g) => g.weight);
+  container.innerHTML = `
+    <div class="weight-band">
+      <div class="weight-spacer"></div>
+      <div class="weight-grid">
+        ${weights.map((w) => `<div class="weight-cell">${w}</div>`).join("")}
+      </div>
+    </div>
+  `;
 }
 
-// ---------------------------------------------------------------------------
-// Render grouped table
-// ---------------------------------------------------------------------------
+function renderOutlierRankTable(container) {
+  container.innerHTML = `
+    <table class="data-table rank-table">
+      <thead>
+        <tr>
+          <th>Quintile Position</th>
+          <th>Min Rank</th>
+          <th>Max Rank</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="q1">1</td><td class="q1">1</td><td class="q1">1</td></tr>
+        <tr><td class="q2">2</td><td class="q2">2</td><td class="q2">3</td></tr>
+        <tr><td class="q3">3</td><td class="q3">3</td><td class="q3">3</td></tr>
+        <tr><td class="q4">4</td><td class="q4">4</td><td class="q4">4</td></tr>
+        <tr><td class="q5">5</td><td class="q5">5</td><td class="q5">5</td></tr>
+      </tbody>
+    </table>
+  `;
+}
 
-function buildGroupedTable(tableEl, rows, labelFallbacks, resolvedCols, rankTable) {
-  if (!tableEl) return;
-  tableEl.innerHTML = "";
-
-  if (!rows || !rows.length) {
-    tableEl.innerHTML = "<thead><tr><th>No data</th></tr></thead><tbody><tr><td>Nothing to display.</td></tr></tbody>";
+function renderSummaryGrid(container, row) {
+  if (!row) {
+    container.innerHTML = `<div class="summary-grid"><div class="summary-item"><span class="summary-label">No selection</span><span class="summary-value">No data available</span></div></div>`;
     return;
   }
 
-  const thead = document.createElement("thead");
+  const priorityKeys = ["Month", "Region", "District", "SAP", "Sap: Loaction", "Quintile Position", "Overall Rank", "Overall Score"];
+  const keys = Object.keys(row).filter((k) => !k.startsWith("__") && !isSeparatorColumn(k));
 
-  // Row 1: base headers (rowspan=2) + metric group headers (colspan=2)
-  const groupRow = document.createElement("tr");
-
-  const baseHeaders = [
-    { label: "Month", fallbacks: ["Month", "MONTH", "Month Name"] },
-    { label: "Name", fallbacks: labelFallbacks },
-    { label: "Quintile Position", fallbacks: ["Quintile Position", "Quintile", "Q"] },
-    { label: "Overall Rank", fallbacks: ["Overall Rank", "OverallRank", "Rank"] },
-    { label: "*", fallbacks: ["*"] },
+  const ordered = [
+    ...priorityKeys.filter((k) => keys.includes(k)),
+    ...keys.filter((k) => !priorityKeys.includes(k)).slice(0, 10),
   ];
 
+  container.innerHTML = `
+    <div class="summary-grid">
+      ${ordered
+        .map(
+          (key) => `
+            <div class="summary-item">
+              <span class="summary-label">${escapeHtml(key)}</span>
+              <span class="summary-value">${escapeHtml(formatCellValue(row[key]))}</span>
+            </div>`
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function buildGroupedTable(tableEl, rows, labelField) {
+  tableEl.innerHTML = "";
+
+  if (!rows || !rows.length) {
+    tableEl.innerHTML = `<thead><tr><th>No data found</th></tr></thead><tbody><tr><td>Nothing to display.</td></tr></tbody>`;
+    return;
+  }
+
+  const metricGroups = resolveMetricGroupColumns(rows[0]);
+  const baseHeaders = ["Month", labelField, "Quintile Position", "Overall Rank", "*"];
+  const thead = document.createElement("thead");
+
+  const groupRow = document.createElement("tr");
   baseHeaders.forEach((h) => {
     const th = document.createElement("th");
     th.rowSpan = 2;
-    th.textContent = h.label;
+    th.textContent = h;
     groupRow.appendChild(th);
   });
 
-  METRIC_GROUPS.forEach((g) => {
+  metricGroups.forEach((g) => {
     const th = document.createElement("th");
     th.colSpan = 2;
-    th.textContent = `${g.label} ${g.weight}`;
+    th.textContent = g.weight;
     groupRow.appendChild(th);
   });
 
-  // Row 2: metric sub-headers (value + rank)
   const subRow = document.createElement("tr");
-  METRIC_GROUPS.forEach((g) => {
-    const thV = document.createElement("th");
-    thV.textContent = g.label;
-    subRow.appendChild(thV);
-    const thR = document.createElement("th");
-    thR.textContent = "Rank";
-    subRow.appendChild(thR);
+  metricGroups.forEach((g) => {
+    const thValue = document.createElement("th");
+    thValue.textContent = g.label;
+    subRow.appendChild(thValue);
+
+    const thRank = document.createElement("th");
+    thRank.textContent = `${g.label} Rank`;
+    subRow.appendChild(thRank);
   });
 
   thead.appendChild(groupRow);
@@ -470,46 +600,59 @@ function buildGroupedTable(tableEl, rows, labelFallbacks, resolvedCols, rankTabl
   rows.forEach((row) => {
     const tr = document.createElement("tr");
 
-    const qpRaw = getVal(row, ["Quintile Position", "Quintile", "Q"]);
-    const qpStr = String(qpRaw);
-    const qCls = quintileClass(qpStr);
-
-    baseHeaders.forEach((h) => {
+    baseHeaders.forEach((header) => {
       const td = document.createElement("td");
-      if (h.label === "*") {
+
+      if (header === "Month") {
+        td.textContent = formatCellValue(getRowValue(row, ["Month", "MONTH", "Month Name"]));
+      } else if (header === "Quintile Position") {
+        td.textContent = formatCellValue(getRowValue(row, ["Quintile Position", "Quintile", "Q", "Qtr"]));
+      } else if (header === "Overall Rank") {
+        td.textContent = formatCellValue(getRowValue(row, ["Overall Rank", "OverallRank", "Rank", "Overall"]));
+      } else if (header === "*") {
         td.textContent = "*";
       } else {
-        const v = getVal(row, h.fallbacks);
-        td.textContent = fmtNum(v);
+        td.textContent = formatCellValue(
+          getRowValue(row, [
+            labelField,
+            `${labelField} Name`,
+            "Region",
+            "Region Name",
+            "District",
+            "District Name",
+            "Store",
+            "Store Name",
+            "SAP",
+            "Sap: Loaction",
+            "Sap: Location",
+            "STORE NAME",
+            "STORE CODE",
+          ])
+        );
       }
-      if (h.label === "Quintile Position" || h.label === "Overall Rank") {
-        if (qCls) td.classList.add(qCls);
-      }
+
+      const q = getRowValue(row, ["Quintile Position", "Quintile", "Q", "Qtr"]);
+      if (header === "Quintile Position") td.classList.add(quintileClass(q));
+      if (header === "Overall Rank") td.classList.add(quintileClass(q));
+
       tr.appendChild(td);
     });
 
-    METRIC_GROUPS.forEach((g, i) => {
-      const col = resolvedCols[i] || {};
-      const vKey = col.valueKey;
-      const rKey = col.rankKey;
-
+    metricGroups.forEach((g) => {
       const valueTd = document.createElement("td");
-      const rawVal = vKey ? row[vKey] : "";
-      if (g.isCsat) {
-        valueTd.textContent = fmtNum(rawVal);
-      } else {
-        valueTd.textContent = fmtPct(rawVal);
-      }
-      tr.appendChild(valueTd);
+      valueTd.textContent = formatCellValue(
+        getRowValue(row, [g.percentColumn, `${g.label} %Tgt`, `${g.label} % Target`, `${g.label}`, `${g.label} Actual`])
+      );
 
+      const rankValue = getRowValue(row, [g.rankColumn, `${g.label} Rank`, "Rank"]);
       const rankTd = document.createElement("td");
-      const rawRank = rKey ? row[rKey] : "";
-      rankTd.textContent = fmtNum(rawRank);
-      if (rawRank !== "" && rankTable) {
-        const qp = quintileFromRank(rawRank, rankTable);
-        const cls = quintileClass(qp);
-        if (cls) rankTd.classList.add(cls);
-      }
+      rankTd.textContent = formatCellValue(rankValue);
+
+      const quintileRules = state.metricRules[labelField.toLowerCase()] || [];
+      const quintile = determineQuintileFromRank(rankValue, quintileRules);
+      if (quintile) rankTd.classList.add(quintileClass(quintile));
+
+      tr.appendChild(valueTd);
       tr.appendChild(rankTd);
     });
 
@@ -519,232 +662,213 @@ function buildGroupedTable(tableEl, rows, labelFallbacks, resolvedCols, rankTabl
   tableEl.appendChild(tbody);
 }
 
-// ---------------------------------------------------------------------------
-// Summary grid (district drilldown header)
-// ---------------------------------------------------------------------------
-
-function renderSummaryGrid(container, row) {
-  if (!container) return;
-  container.innerHTML = "";
-  if (!row) return;
-
-  const grid = document.createElement("div");
-  grid.className = "summary-grid";
-
-  const fields = [
-    { label: "District", fallbacks: ["District", "District Name"] },
-    { label: "Month", fallbacks: ["Month", "MONTH"] },
-    { label: "Quintile Position", fallbacks: ["Quintile Position", "Quintile"] },
-    { label: "Overall Rank", fallbacks: ["Overall Rank", "Overall"] },
-    { label: "Overall Score", fallbacks: ["Overall Score"] },
-  ];
-
-  fields.forEach((f) => {
-    const v = getVal(row, f.fallbacks);
-    if (v === "" && f.label === "Overall Score") return;
-    const div = document.createElement("div");
-    div.className = "summary-item";
-    const label = document.createElement("span");
-    label.className = "summary-label";
-    label.textContent = f.label;
-    const val = document.createElement("span");
-    val.className = "summary-value";
-    val.textContent = fmtNum(v);
-    const qp = getVal(row, ["Quintile Position", "Quintile"]);
-    if (f.label === "Quintile Position" || f.label === "Overall Rank") {
-      const cls = quintileClass(String(qp));
-      if (cls) div.classList.add(cls);
-    }
-    div.appendChild(label);
-    div.appendChild(val);
-    grid.appendChild(div);
-  });
-
-  container.appendChild(grid);
-}
-
-// ---------------------------------------------------------------------------
-// Outlier rank table
-// ---------------------------------------------------------------------------
-
-function renderOutlierRankTable(container, rankTable) {
-  if (!container) return;
-  container.innerHTML = "";
-  renderRankTable(container, rankTable);
-}
-
-// ---------------------------------------------------------------------------
-// Outlier table
-// ---------------------------------------------------------------------------
-
-function renderOutliersTable() {
-  const metricIdx = parseInt(el.outlierMetricSelect?.value ?? "0", 10);
-  const mode = el.outlierModeSelect?.value ?? "lowest";
-  const g = METRIC_GROUPS[metricIdx];
-  if (!g) return;
-
-  // Update meta label
-  if (el.outliersMeta) {
-    el.outliersMeta.textContent = `Metric: ${g.label} | View: ${mode === "lowest" ? "Lowest 15" : "Highest 15"}`;
-  }
-
-  // Resolve the value column from store rows
-  const colInfo = state.resolvedColumns.store[metricIdx] || {};
-  const valueKey = colInfo.valueKey;
-
-  // Dynamic second column header
-  const valueColHeader = g.isCsat ? "CSAT Actual" : "Percent to Target";
-
-  // Render rank-range table
-  renderOutlierRankTable(el.outliersRankHost, state.storeRankTable);
-
-  // Sort and slice
-  let rows = state.stores.filter((r) => {
-    const v = valueKey ? r[valueKey] : "";
-    return v !== "" && v !== null && v !== undefined;
-  });
-
-  rows.sort((a, b) => {
-    const va = valueKey ? parseFloat(a[valueKey]) : 0;
-    const vb = valueKey ? parseFloat(b[valueKey]) : 0;
-    return mode === "lowest" ? va - vb : vb - va;
-  });
-
-  rows = rows.slice(0, 15);
-
-  // Build table
-  if (!el.outliersTable) return;
-  el.outliersTable.innerHTML = "";
-
-  const thead = document.createElement("thead");
-  const hrow = document.createElement("tr");
-  ["Store Name", valueColHeader].forEach((h) => {
-    const th = document.createElement("th");
-    th.textContent = h;
-    hrow.appendChild(th);
-  });
-  thead.appendChild(hrow);
-  el.outliersTable.appendChild(thead);
-
-  const tbody = document.createElement("tbody");
-  rows.forEach((row) => {
-    const tr = document.createElement("tr");
-
-    // Store name
-    const nameTd = document.createElement("td");
-    nameTd.textContent = getVal(row, [
-      "Sap: Loaction", "Sap: Location", "SAP Location",
-      "Store Name", "STORE NAME", "Store", "SAP", "STORE CODE",
-    ]);
-    tr.appendChild(nameTd);
-
-    // Value
-    const valTd = document.createElement("td");
-    const rawVal = valueKey ? row[valueKey] : "";
-    valTd.textContent = g.isCsat ? fmtNum(rawVal) : fmtPct(rawVal);
-    tr.appendChild(valTd);
-
-    tbody.appendChild(tr);
-  });
-
-  el.outliersTable.appendChild(tbody);
-}
-
-// ---------------------------------------------------------------------------
-// Main render
-// ---------------------------------------------------------------------------
-
 function renderDashboard() {
-  if (!el.regionMeta) return;
   el.regionMeta.textContent = `${state.regions.length} rows`;
-  if (el.districtMeta) el.districtMeta.textContent = `${state.districts.length} rows`;
+  el.districtMeta.textContent = `${state.districts.length} rows`;
 
-  renderRankTable(el.regionRankHost, state.regionRankTable);
-  renderRankTable(el.districtRankHost, state.districtRankTable);
+  renderRankTable(el.regionRankHost, [
+    [1, 1, 1],
+    [2, 2, 3],
+    [3, 3, 3],
+    [4, 4, 4],
+  ]);
+
+  renderRankTable(el.districtRankHost, [
+    [1, 1, 7],
+    [2, 8, 14],
+    [3, 15, 22],
+    [4, 23, 29],
+    [5, 30, 37],
+  ]);
 
   renderWeightBand(el.regionWeightHost);
   renderWeightBand(el.districtWeightHost);
 
-  buildGroupedTable(
-    el.regionTable, state.regions,
-    ["Region", "Region Name", "REGION"],
-    state.resolvedColumns.region,
-    state.regionRankTable
-  );
-
-  buildGroupedTable(
-    el.districtTable, state.districts,
-    ["District", "District Name", "DISTRICT"],
-    state.resolvedColumns.district,
-    state.districtRankTable
-  );
-
+  buildGroupedTable(el.regionTable, state.regions, "Region");
+  buildGroupedTable(el.districtTable, state.districts, "District");
   renderDistrictView();
 }
 
 function renderDistrictView() {
   const districtName = state.selectedDistrict;
-  const districtRow = state.districts.find((r) => {
-    const d = getVal(r, ["District", "District Name"]);
-    return norm(d) === norm(districtName);
-  }) || null;
-
-  const storeRows = state.stores.filter((r) => {
-    const d = getVal(r, ["District", "District Name", "DISTRICT"]);
-    return norm(d) === norm(districtName);
-  });
+  const districtRow = findDistrictRow(districtName);
+  const storeRows = getDistrictStores(districtName);
 
   renderSummaryGrid(el.selectedDistrictSummary, districtRow);
 
-  renderRankTable(el.storeRankHost, state.storeRankTable);
+  renderRankTable(el.storeRankHost, [
+    [1, 1, 72],
+    [2, 73, 144],
+    [3, 145, 216],
+    [4, 217, 288],
+    [5, 289, 360],
+  ]);
+
   renderWeightBand(el.storeWeightHost);
 
-  buildGroupedTable(
-    el.storeTable, storeRows,
-    ["Sap: Loaction", "Sap: Location", "SAP Location", "Store Name", "STORE NAME", "Store", "SAP"],
-    state.resolvedColumns.store,
-    state.storeRankTable
+  buildGroupedTable(el.storeTable, storeRows, "Store");
+}
+
+function renderOutliers() {
+  const metricColumn = state.selectedOutlierMetric;
+  const metricLabel =
+    el.outlierMetricSelect.options[el.outlierMetricSelect.selectedIndex]?.text || metricColumn || "";
+  const mode = el.outlierModeSelect?.value || "lowest";
+  const sortDirection = mode === "highest" ? -1 : 1;
+
+  renderOutlierRankTable(el.outliersRankHost);
+
+  const isCsat = normalizeLookup(metricLabel).includes("csat");
+  const valueHeader = isCsat ? "CSAT Actual" : "Percent to Target";
+
+  const formatOutlierValue = (value) => {
+    const numeric = parseNumeric(value);
+    if (numeric === null) return "";
+    return isCsat ? numeric.toFixed(2) : `${numeric.toFixed(2)}%`;
+  };
+
+  const rows = state.stores
+    .map((row) => {
+      const storeName = normalizeText(
+        row["Sap: Loaction"] || row["Sap: Location"] || row["STORE NAME"] || row["STORE CODE"] || row.SAP
+      );
+      const metricValue = parseNumeric(row[metricColumn]);
+
+      return {
+        "Store Name": storeName,
+        [valueHeader]: formatOutlierValue(row[metricColumn]),
+        __metricValue: metricValue,
+      };
+    })
+    .filter((row) => row["Store Name"] && row.__metricValue !== null)
+    .sort((a, b) => {
+      if (a.__metricValue === b.__metricValue) {
+        return a["Store Name"].toLowerCase().localeCompare(b["Store Name"].toLowerCase());
+      }
+      return (a.__metricValue - b.__metricValue) * sortDirection;
+    })
+    .slice(0, 15)
+    .map(({ __metricValue, ...rest }) => rest);
+
+  el.outliersMeta.innerHTML = `
+    <div class="summary-grid">
+      <div class="summary-item">
+        <span class="summary-label">Metric</span>
+        <span class="summary-value">${escapeHtml(metricLabel)}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">View</span>
+        <span class="summary-value">${escapeHtml(mode === "highest" ? "Highest 15" : "Lowest 15")}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Stores shown</span>
+        <span class="summary-value">${rows.length}</span>
+      </div>
+    </div>
+  `;
+
+  buildTable(el.outliersTable, rows, "store");
+}
+
+function populateDistrictSelector() {
+  const districts = [...new Set(state.locations.map((r) => normalizeText(r.DISTRICT || r.District)).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b)
   );
+
+  el.districtSelect.innerHTML = districts.map((district) => `<option value="${escapeHtml(district)}">${escapeHtml(district)}</option>`).join("");
+  state.selectedDistrict = districts[0] || null;
+  if (state.selectedDistrict) el.districtSelect.value = state.selectedDistrict;
 }
 
-// ---------------------------------------------------------------------------
-// View switching
-// ---------------------------------------------------------------------------
+function populateOutlierMetrics() {
+  const row = state.stores[0] || {};
+  const metrics = detectMetricColumns(row);
 
-function showView(viewId) {
-  ["dashboardView", "outliersView"].forEach((id) => {
-    const v = el[id];
-    if (v) v.classList.toggle("hidden", id !== viewId);
-  });
+  el.outlierMetricSelect.innerHTML = metrics
+    .map((metric) => `<option value="${escapeHtml(metric.percentColumn)}">${escapeHtml(metric.label)}</option>`)
+    .join("");
+
+  state.selectedOutlierMetric = metrics[0]?.percentColumn || null;
+  if (state.selectedOutlierMetric) el.outlierMetricSelect.value = state.selectedOutlierMetric;
 }
 
-// ---------------------------------------------------------------------------
-// Event wiring
-// ---------------------------------------------------------------------------
+function switchView(view) {
+  state.currentView = view;
+  el.dashboardView.classList.toggle("hidden", view !== "dashboard");
+  el.outliersView.classList.toggle("hidden", view !== "outliers");
+}
 
-function wireEvents() {
-  el.btnDashboard?.addEventListener("click", () => showView("dashboardView"));
+function attachEvents() {
+  el.btnDashboard.addEventListener("click", () => switchView("dashboard"));
+  el.btnOutliers.addEventListener("click", () => switchView("outliers"));
 
-  el.btnOutliers?.addEventListener("click", () => {
-    showView("outliersView");
-    renderOutliersTable();
-  });
-
-  el.districtSelect?.addEventListener("change", (e) => {
+  el.districtSelect.addEventListener("change", (e) => {
     state.selectedDistrict = e.target.value;
     renderDistrictView();
   });
 
-  el.outlierMetricSelect?.addEventListener("change", () => renderOutliersTable());
-  el.outlierModeSelect?.addEventListener("change", () => renderOutliersTable());
+  el.outlierMetricSelect.addEventListener("change", (e) => {
+    state.selectedOutlierMetric = e.target.value;
+    renderOutliers();
+  });
+
+  el.outlierModeSelect.addEventListener("change", () => {
+    renderOutliers();
+  });
 }
 
-// ---------------------------------------------------------------------------
-// Init
-// ---------------------------------------------------------------------------
+function parseWorkbook() {
+  const regionSheet = getSheetWithFallback(state.workbook, SHEET_CANDIDATES.region);
+  const districtSheet = getSheetWithFallback(state.workbook, SHEET_CANDIDATES.district);
+  const storeSheet = getSheetWithFallback(state.workbook, SHEET_CANDIDATES.store);
+  const locationSheet = getSheetWithFallback(state.workbook, SHEET_CANDIDATES.locations);
+  const metricSheet = getSheetWithFallback(state.workbook, SHEET_CANDIDATES.metricRules);
 
-document.addEventListener("DOMContentLoaded", () => {
-  initEl();
-  wireEvents();
-  loadWorkbook();
-});
+  const regionRows = cleanRows(sheetToObjects(regionSheet));
+  const districtRows = cleanRows(sheetToObjects(districtSheet));
+  const storeRows = cleanRows(sheetToObjects(storeSheet));
+  const locationRows = cleanRows(sheetToObjects(locationSheet));
+  const metricRows = cleanRows(sheetToObjects(metricSheet));
+
+  state.metricRules = parseMetricRules(metricRows);
+  state.locations = locationRows;
+  state.regions = enrichRows(regionRows, "region", state.metricRules.region).sort(
+    (a, b) => parseNumeric(a["Overall Rank"]) - parseNumeric(b["Overall Rank"])
+  );
+  state.districts = enrichRows(districtRows, "district", state.metricRules.district).sort(
+    (a, b) => parseNumeric(a["Overall Rank"]) - parseNumeric(b["Overall Rank"])
+  );
+  state.stores = enrichRows(storeRows, "store", state.metricRules.store).sort(
+    (a, b) => parseNumeric(a["Overall Rank"]) - parseNumeric(b["Overall Rank"])
+  );
+}
+
+async function loadWorkbook() {
+  try {
+    const response = await fetch(WORKBOOK_URL);
+    if (!response.ok) throw new Error(`Could not fetch ${WORKBOOK_URL} (${response.status})`);
+    const buffer = await response.arrayBuffer();
+    state.workbook = XLSX.read(buffer, { type: "array" });
+
+    parseWorkbook();
+    populateDistrictSelector();
+    populateOutlierMetrics();
+
+    renderDashboard();
+    renderOutliers();
+    switchView("dashboard");
+
+    el.statusBar.innerHTML = `Loaded <strong>${escapeHtml(WORKBOOK_URL)}</strong> successfully.`;
+  } catch (err) {
+    console.error(err);
+    el.statusBar.innerHTML = `
+      <strong>Unable to load workbook.</strong>
+      Please make sure <code>${escapeHtml(WORKBOOK_URL)}</code> exists in the repository root and that the sheet names are correct.
+      <br /><br />
+      ${escapeHtml(err.message || String(err))}
+    `;
+  }
+}
+
+attachEvents();
+loadWorkbook();
