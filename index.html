@@ -10,10 +10,10 @@
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <div>
+        <div class="topbar-brand">
           <p class="eyebrow">CSLB</p>
           <h1>Sales Dashboard</h1>
-          <p class="subtle">Excel-backed performance dashboard for Region, District, Store, and Outliers views</p>
+          <p class="subtle">Excel-backed performance dashboard — Region, District, Store &amp; Outliers</p>
         </div>
         <div class="topbar-actions">
           <button id="btnDashboard" class="btn btn-primary">Dashboard</button>
@@ -23,73 +23,73 @@
 
       <main>
         <section id="statusBar" class="status-bar">
-          Loading workbook data from <code>sales-dashboard.xlsx</code>...
+          Loading workbook data from <code>sales-dashboard.xlsx</code>…
         </section>
 
+        <!-- ===== Dashboard View ===== -->
         <section id="dashboardView" class="view">
+
+          <!-- Region Summary -->
           <div class="card">
             <div class="card-header">
               <div>
                 <h2>Region Summary</h2>
-                <p class="subtle">Top-level region performance from the Region Sheet</p>
+                <p class="subtle">Top-level region performance</p>
               </div>
               <div id="regionMeta" class="meta-pill"></div>
             </div>
-
             <div id="regionRankHost"></div>
             <div id="regionWeightHost"></div>
-
             <div class="table-wrap">
               <table id="regionTable" class="data-table"></table>
             </div>
           </div>
 
+          <!-- District Ranking -->
           <div class="card">
             <div class="card-header">
               <div>
                 <h2>District Ranking</h2>
-                <p class="subtle">District performance from the District Sheet</p>
+                <p class="subtle">District performance ranking</p>
               </div>
               <div id="districtMeta" class="meta-pill"></div>
             </div>
-
             <div id="districtRankHost"></div>
             <div id="districtWeightHost"></div>
-
             <div class="table-wrap">
               <table id="districtTable" class="data-table"></table>
             </div>
           </div>
 
+          <!-- District Drilldown -->
           <div class="card">
             <div class="card-header">
               <div>
                 <h2>District Drilldown</h2>
-                <p class="subtle">Select a district to view its district summary and store rows</p>
+                <p class="subtle">Select a district to view its stores</p>
               </div>
               <div class="selector-group">
                 <label for="districtSelect">District</label>
                 <select id="districtSelect"></select>
               </div>
             </div>
-
             <div id="selectedDistrictSummary" class="summary-panel"></div>
-
             <div id="storeRankHost"></div>
             <div id="storeWeightHost"></div>
-
             <div class="table-wrap">
               <table id="storeTable" class="data-table"></table>
             </div>
           </div>
+
         </section>
 
+        <!-- ===== Outliers View ===== -->
         <section id="outliersView" class="view hidden">
           <div class="card">
             <div class="card-header">
               <div>
                 <h2>Region Outliers</h2>
-                <p class="subtle">Select a metric to view the lowest or highest 15 stores by metric value</p>
+                <p class="subtle">Lowest or highest 15 stores by selected metric</p>
               </div>
               <div class="selector-group">
                 <label for="outlierMetricSelect">Metric</label>
@@ -103,15 +103,14 @@
                 </select>
               </div>
             </div>
-
             <div id="outliersMeta" class="summary-panel"></div>
             <div id="outliersRankHost"></div>
-
             <div class="table-wrap">
               <table id="outliersTable" class="data-table"></table>
             </div>
           </div>
         </section>
+
       </main>
     </div>
 
